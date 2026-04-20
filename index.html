@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spelling Battle</title>
+    <link href="https://fonts.googleapis.com/css2?family=Balsamiq+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --team-a: #ff4757;
+            --team-b: #2e86de;
+        }
+
+        body, html {
+            margin: 0; padding: 0; height: 100%; overflow: hidden;
+            font-family: 'Balsamiq Sans', cursive;
+        }
+
+        /* Start Page */
+        #start-page {
+            position: absolute; width: 100%; height: 100%;
+            background: url('start page background.jpg') no-repeat center center/cover;
+            display: flex; flex-direction: column; align-items: center; 
+            justify-content: flex-end; 
+            padding-bottom: 10vh; /* Adjusted to sit lower since title is in background */
+            z-index: 100;
+        }
+
+        .ui-overlay {
+            display: flex; flex-direction: column; gap: 20px; align-items: center;
+        }
+
+        #play-btn {
+            padding: 25px 80px; font-size: 40px; cursor: pointer; background: #2ecc71; color: white;
+            border: 5px solid #fff; border-radius: 20px; font-family: 'Balsamiq Sans', cursive;
+            font-weight: bold; box-shadow: 0 10px 20px rgba(0,0,0,0.3); transition: 0.2s;
+        }
+
+        #play-btn:hover { transform: scale(1.1); background: #27ae60; }
+
+        #edit-toggle-btn {
+            padding: 10px 20px; background: rgba(0,0,0,0.6); color: white; border: 2px solid #fff;
+            border-radius: 10px; cursor: pointer; font-family: 'Balsamiq Sans';
+        }
+
+        /* Results Screen */
+        #results-screen {
+            display: none; 
+            position: absolute; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.95);
+            z-index: 200; 
+            color: white; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            text-align: center;
+        }
+        #winner-msg { font-size: 100px; text-transform: uppercase; margin: 0; }
+        .final-score { font-size: 50px; margin: 20px 0; }
+        .restart-btn { 
+            padding: 25px 60px; font-size: 35px; font-family: 'Balsamiq Sans'; 
+            cursor: pointer; border-radius: 20px; background: #2ecc71; color: white; border: none; font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+        }
+
+        #edit-modal {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; padding: 30px; border-radius: 20px; border: 5px solid #333; z-index: 110;
+            text-align: center;
+        }
+
+        #vocab-input { 
+            width: 400px; height: 100px; padding: 15px; border-radius: 10px; border: 3px solid #333; 
+            font-family: 'Balsamiq Sans', cursive; font-size: 18px; margin-bottom: 15px;
+        }
+
+        /* Game Screen */
+        #game-container {
+            display: none; height: 100%; width: 100%; flex-direction: row; position: relative;
+        }
+
+        .side {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: space-around;
+            padding: 20px;
+        }
+
+        #side-a { background: #fff0f0; border-right: 4px dashed #ccc; }
+        #side-b { background: #f0faff; }
+
+        .score-display { font-size: 50px; font-weight: bold; }
+        .side-a-text { color: var(--team-a); }
+        .side-b-text { color: var(--team-b); }
+
+        .vocab-img { 
+            width: 320px; height: 240px; object-fit: cover; border-radius: 20px; 
+            border: 8px solid #333; background: #fff;
+        }
+
+        .boxes-container, .letters-container { display: flex; gap: 12px; justify-content: center; min-height: 80px; flex-wrap: wrap; }
+
+        .box { 
+            width: 75px; height: 75px; border: 4px dashed #aaa; border-radius: 12px; 
+            background: rgba(255,255,255,0.7); 
+        }
+
+        .letter {
+            width: 75px; height: 75px; background: white; border: 4px solid #333; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 38px; font-weight: bold;
+            cursor: grab; box-shadow: 0 6px 0 #333; user-select: none;
+        }
+
+        #timer-bomb {
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            width: 150px; height: 150px; background: #222; border-radius: 50%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: white; border: 8px solid #ff4757; z-index: 10; box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+
+        #timer-bomb span { font-size: 60px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="start-page">
+        <div class="ui-overlay">
+            <button id="play-btn">START GAME</button>
+            <button id="edit-toggle-btn">EDIT WORDS</button>
+        </div>
+    </div>
+
+    <div id="edit-modal">
+        <h3>Input Vocabulary Words</h3>
+        <p>(Separated by commas)</p>
+        <textarea id="vocab-input">dance, draw, jump, read, sing, swim, write</textarea>
+        <br>
+        <button onclick="closeEdit()" style="padding:10px 20px; cursor:pointer; margin-top:10px;">SAVE & CLOSE</button>
+    </div>
+
+    <div id="game-container">
+        <div class="side" id="side-a">
+            <div class="score-display side-a-text">TEAM A: <span id="score-a">0</span></div>
+            <img id="img-a" class="vocab-img" src="" alt="Word">
+            <div id="boxes-a" class="boxes-container"></div>
+            <div id="letters-a" class="letters-container"></div>
+        </div>
+
+        <div id="timer-bomb">
+            <span id="timer-val">120</span>
+        </div>
+
+        <div class="side" id="side-b">
+            <div class="score-display side-b-text">TEAM B: <span id="score-b">0</span></div>
+            <img id="img-b" class="vocab-img" src="" alt="Word">
+            <div id="boxes-b" class="boxes-container"></div>
+            <div id="letters-b" class="letters-container"></div>
+        </div>
+    </div>
+
+    <div id="results-screen">
+        <h1 id="winner-msg">TEAM A WINS!</h1>
+        <div class="final-score" id="score-summary"></div>
+        <button class="restart-btn" onclick="location.reload()">PLAY AGAIN</button>
+    </div>
+
+    <script>
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        let bgmInterval;
+
+        const Sounds = {
+            playChime() {
+                const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            },
+            playBuzz() {
+                const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            },
+            playDramatic() {
+                const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(60, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+            },
+            // Kid-friendly background music synthesis
+            startBGM() {
+                const melody = [440, 493, 523, 587, 659, 587, 523, 493]; // Simple scale
+                let step = 0;
+                
+                const playNote = () => {
+                    if (!gameActive) return;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc.type = 'triangle'; // Softer, kid-friendly sound
+                    osc.frequency.setValueAtTime(melody[step % melody.length], audioCtx.currentTime);
+                    
+                    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.5);
+                    step++;
+                };
+                
+                bgmInterval = setInterval(playNote, 500);
+            }
+        };
+
+        let words = [];
+        let currentWordIndexA = 0;
+        let currentWordIndexB = 0;
+        let scoreA = 0;
+        let scoreB = 0;
+        let timeLeft = 120;
+        let gameActive = false;
+
+        document.getElementById('edit-toggle-btn').onclick = () => document.getElementById('edit-modal').style.display = 'block';
+        function closeEdit() { document.getElementById('edit-modal').style.display = 'none'; }
+
+        document.getElementById('play-btn').onclick = startGame;
+
+        function startGame() {
+            if (!audioCtx) audioCtx = new AudioCtx();
+            audioCtx.resume();
+            
+            const input = document.getElementById('vocab-input').value;
+            words = input.split(',').map(w => w.trim().toLowerCase()).filter(w => w !== "");
+            words.sort(() => Math.random() - 0.5); 
+
+            document.getElementById('start-page').style.display = 'none';
+            document.getElementById('game-container').style.display = 'flex';
+            initGame();
+        }
+
+        function initGame() {
+            scoreA = 0; scoreB = 0; timeLeft = 120;
+            document.getElementById('score-a').innerText = "0";
+            document.getElementById('score-b').innerText = "0";
+            gameActive = true;
+            setupRound('a', words[0]);
+            setupRound('b', words[0]);
+            startTimer();
+            Sounds.startBGM();
+        }
+
+        function setupRound(side, word) {
+            const boxesContainer = document.getElementById(`boxes-${side}`);
+            const lettersContainer = document.getElementById(`letters-${side}`);
+            const img = document.getElementById(`img-${side}`);
+            
+            // Priority: Specific word image -> fallback vocabulary.jpg
+            img.src = `${word}.jpg`;
+            img.onerror = () => { img.src = "vocabulary.jpg"; };
+
+            boxesContainer.innerHTML = '';
+            lettersContainer.innerHTML = '';
+
+            for (let char of word) {
+                const box = document.createElement('div');
+                box.className = 'box';
+                box.dataset.expected = char;
+                box.addEventListener('dragover', e => e.preventDefault());
+                box.addEventListener('drop', handleDrop);
+                boxesContainer.appendChild(box);
+            }
+
+            const scrambled = word.split('').sort(() => Math.random() - 0.5);
+            scrambled.forEach(char => {
+                const l = document.createElement('div');
+                l.className = 'letter';
+                l.textContent = char;
+                l.draggable = true;
+                l.addEventListener('dragstart', e => {
+                    e.dataTransfer.setData('text', char);
+                    e.dataTransfer.setData('side', side);
+                });
+                lettersContainer.appendChild(l);
+            });
+        }
+
+        function handleDrop(e) {
+            if (!gameActive) return;
+            e.preventDefault();
+            const char = e.dataTransfer.getData('text');
+            const side = e.dataTransfer.getData('side');
+            const box = e.target.closest('.box');
+            if (!box || !box.parentNode.id.includes(side)) return;
+
+            if (box.dataset.expected === char && !box.innerHTML) {
+                box.innerHTML = `<div class="letter" style="cursor:default; box-shadow:none;">${char}</div>`;
+                box.style.border = '4px solid #27ae60';
+                Sounds.playChime();
+                checkWordComplete(side);
+            } else {
+                Sounds.playBuzz();
+            }
+        }
+
+        function checkWordComplete(side) {
+            const boxes = document.querySelectorAll(`#boxes-${side} .box`);
+            const complete = Array.from(boxes).every(b => b.innerHTML !== '');
+            if (complete) {
+                if (side === 'a') {
+                    scoreA += 1;
+                    document.getElementById('score-a').innerText = scoreA;
+                    currentWordIndexA = (currentWordIndexA + 1) % words.length;
+                    setTimeout(() => setupRound('a', words[currentWordIndexA]), 300);
+                } else {
+                    scoreB += 1;
+                    document.getElementById('score-b').innerText = scoreB;
+                    currentWordIndexB = (currentWordIndexB + 1) % words.length;
+                    setTimeout(() => setupRound('b', words[currentWordIndexB]), 300);
+                }
+            }
+        }
+
+        function startTimer() {
+            const timerVal = document.getElementById('timer-val');
+            const timerInterval = setInterval(() => {
+                if (!gameActive) { clearInterval(timerInterval); return; }
+                timeLeft--;
+                timerVal.innerText = timeLeft;
+
+                if (timeLeft <= 10 && timeLeft > 0) {
+                    Sounds.playDramatic();
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    clearInterval(bgmInterval);
+                    showResults();
+                }
+            }, 1000);
+        }
+
+        function showResults() {
+            gameActive = false;
+            document.getElementById('game-container').style.display = 'none';
+            const screen = document.getElementById('results-screen');
+            const msg = document.getElementById('winner-msg');
+            const summary = document.getElementById('score-summary');
+            screen.style.display = 'flex';
+            
+            if (scoreA > scoreB) {
+                msg.innerText = "TEAM A WINS!";
+                msg.style.color = "var(--team-a)";
+            } else if (scoreB > scoreA) {
+                msg.innerText = "TEAM B WINS!";
+                msg.style.color = "var(--team-b)";
+            } else {
+                msg.innerText = "IT'S A DRAW!";
+                msg.style.color = "white";
+            }
+            summary.innerText = `TEAM A: ${scoreA} | TEAM B: ${scoreB}`;
+        }
+    </script>
+</body>
+</html>
